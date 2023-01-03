@@ -1,0 +1,15 @@
+
+{"data" : 
+    {"DATA_LOCATION":"src/data/train.csv",
+    "NUMERIC_FEATURES": ["x1", "x2", "x4", "x5"],
+    "CATEGORICAL_FEATURES": ["x3", "x6", "x7"],
+    "RANDOM_STATE": 1337
+    },
+ "model":
+    {
+    "MAX_ITER":10000,
+    "SAVE_LOCATION": "models/model.pkl"
+    }
+}
+
+
