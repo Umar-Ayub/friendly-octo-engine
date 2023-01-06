@@ -15,19 +15,25 @@ def convert_array(arr):
     """
     Helper function to convert array for model inference
     """
-    D = {}
-    for ind, i in enumerate(arr):
-        D[f"x{ind+1}"] = [i]
-    return pd.DataFrame.from_dict(D)
+    if isinstance(arr, list) and len(arr)==7:
+        D = {}
+        for ind, i in enumerate(arr):
+            D[f"x{ind+1}"] = [i]
+        return pd.DataFrame.from_dict(D)
+    else:
+        return None
 
 
 @app.route('/score',methods=['POST'])
 def predict():
     data = request.get_json(force=True)
     x = convert_array(data)
-    prediction = loaded_model.predict(x).tolist()
-    print('Predictions: ',prediction)
-    return jsonify(prediction)
+    if x is not None:
+        prediction = loaded_model.predict(x).tolist()
+        print('Predictions: ',prediction)
+        return jsonify(prediction)
+    else:
+        return jsonify("Unable to make prediction. Please check data input format")
 
 
 @app.route('/')
