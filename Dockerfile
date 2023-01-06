@@ -8,6 +8,7 @@ COPY requirements.txt ${APPDIR}
 RUN python3 -m pip install -r ${APPDIR}/requirements.txt
 
 ARG LOCATION
+RUN test -n "$LOCATION"
 ENV MODEL_LOCATION=${APPDIR}/model.pkl
 
 COPY serve.py ${APPDIR}
