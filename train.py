@@ -27,6 +27,51 @@ logger = logging.getLogger(__name__)
 PWD = os.getcwd()
 config_file = PWD + '/config.json'
 
+class PreprocessData:
+    def __init__(self, df, config):
+        self.df = df
+        self.config = config
+
+    def split_data(self):
+        df_X = self.df.drop("y", axis=1)
+        df_label = self.df["y"]
+        # Make LogReg Pipeline
+        RANDOM_STATE=self.config["data"]["RANDOM_STATE"]
+
+        X_train, X_test, y_train, y_test = train_test_split(
+            df_X,
+            df_label,
+            random_state=RANDOM_STATE
+            )
+        return X_train, X_test, y_train, y_test
+
+class CreatePipeline:
+    def __init__(self, config):
+        self.config = config
+    
+    def create_classifier(self):
+        numeric_features = self.config["data"]["NUMERIC_FEATURES"]
+        numeric_transformer = Pipeline(
+            steps=[("imputer", SimpleImputer(strategy="median")), ("scaler", StandardScaler())]
+        )
+
+        categorical_features = self.config["data"]["CATEGORICAL_FEATURES"]
+        categorical_transformer = OneHotEncoder(handle_unknown="infrequent_if_exist")
+
+        preprocessor = ColumnTransformer(
+            transformers=[
+                ("num", numeric_transformer, numeric_features),
+                ("cat", categorical_transformer, categorical_features),
+            ]
+        )
+
+        clf = Pipeline(
+            steps=[("preprocessor", preprocessor),
+                ("classifier", LogisticRegression(max_iter=config["model"]["MAX_ITER"]))]
+        )
+        return clf
+
+
 
 if __name__ == "__main__":
     warnings.filterwarnings("ignore")
@@ -48,38 +93,12 @@ if __name__ == "__main__":
             "Unable to download training & test CSV, check your internet connection. Error: %s", e
         )
 
-    
-    df_X = df.drop("y", axis=1)
-    df_label = df["y"]
-
-    numeric_features = config["data"]["NUMERIC_FEATURES"]
-    numeric_transformer = Pipeline(
-        steps=[("imputer", SimpleImputer(strategy="median")), ("scaler", StandardScaler())]
-    )
-
-    categorical_features = config["data"]["CATEGORICAL_FEATURES"]
-    categorical_transformer = OneHotEncoder(handle_unknown="infrequent_if_exist")
-
-    preprocessor = ColumnTransformer(
-        transformers=[
-            ("num", numeric_transformer, numeric_features),
-            ("cat", categorical_transformer, categorical_features),
-        ]
-    )
-
-    clf = Pipeline(
-        steps=[("preprocessor", preprocessor),
-            ("classifier", LogisticRegression(max_iter=config["model"]["MAX_ITER"]))]
-    )
+    # Split Data
+    obj = PreprocessData(df, config)
+    X_train, X_test, y_train, y_test = obj.split_data()
 
     # Make LogReg Pipeline
-    RANDOM_STATE=config["data"]["RANDOM_STATE"]
-
-    X_train, X_test, y_train, y_test = train_test_split(
-        df_X,
-        df_label,
-        random_state=RANDOM_STATE
-        )
+    clf = CreatePipeline(config).create_classifier()
 
     with mlflow.start_run():
         mlflow.log_param('max_iter',config["model"]["MAX_ITER"])
